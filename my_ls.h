@@ -17,7 +17,6 @@
 #define ERROR_MSG_2_SIZE 29
 
 
-
 char* check_flags(char** argv, int num_flags, char*** files, int* num_files, char* dir_path);
 char* dir_content(char*** files, int* num_files, char* flag, char* dir_path);
 int get_num_operands(char** argv, int argc);
@@ -28,8 +27,9 @@ void print_dirs(char** directories, int index);
 void print_error(const char* path_name);
 int my_putchar(char c);
 int is_dir(const char* path);
-void process_input(char** argv, int index, int argc, char*** files, int* num_files);
+int process_input(char** argv, int index, int argc, char*** files, int* num_files);
 void handle_dirs(char** argv, int num_flags, int num_dirs, char*** directories, char*** files, int* num_files);
+char* get_flags(char** argv, int num_flags);
 char* my_strdup(const char* str_1);
 int my_strcmp(const char* str_1, const char* str_2);
 int my_strlen(const char* str_1);

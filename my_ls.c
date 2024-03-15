@@ -1,15 +1,15 @@
 #include "my_ls.h"
 
 int main(int argc, char* argv[]) {
-
     char** files = malloc(0);
     int num_files = 0;
+    int num_dirs = 0;
     int num_operands = get_num_operands(argv, argc);
     char* flag = NULL;
 
     if (num_operands > 0) {
         int index = argc - num_operands; //index of first file or directory
-        process_input(argv, index, argc, &files, &num_files);
+        num_dirs = process_input(argv, index, argc, &files, &num_files);
     }
     else if (num_operands == 0 && argc == 1) { //no flags
         flag = dir_content(&files, &num_files, NULL, ".");
@@ -19,17 +19,15 @@ int main(int argc, char* argv[]) {
     }
 
     if (num_operands <= 1 && flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
-        printf("flag is %s, calling quicksort - time\n", flag);
-        
         quicksort((void**) files, 0, num_files - 1, compare_mod_times);
-
     }
     else if (num_operands <= 1) {
-        printf("flag is %s, calling quicksort\n", flag);
         quicksort((void**) files, 0, num_files - 1, compare_alphabet);
     }
 
-    print_files(files, num_files);
+    if (num_operands < 2 && num_dirs < 1) {
+        print_files(files, num_files);
+    }
 
     free_mem(files, num_files);
 
@@ -77,8 +75,6 @@ char* dir_content(char*** files, int* num_files, char* flag, char* dir_path) {
         *files = realloc(*files, (*num_files + 1) * sizeof(char*));
         (*files)[*num_files] = filename;
         (*num_files)++;
-
-        // printf("Added file: %s\n", filename);
     }
 
     closedir(dir);
@@ -137,12 +133,11 @@ int compare_mod_times(const void* file_1, const void* file_2) {
     }
 
     const char* f1 = (const char*) file_1;
-
     const char* f2 = (const char*) file_2;
 
     struct stat stat_f1, stat_f2;
-    stat(f1, &stat_f1);
-    stat(f2, &stat_f2);
+    lstat(f1, &stat_f1);
+    lstat(f2, &stat_f2);
 
     if (stat_f1.st_mtim.tv_sec < stat_f2.st_mtim.tv_sec) {
         return 1; //file 2 is more recent
@@ -166,30 +161,46 @@ int compare_mod_times(const void* file_1, const void* file_2) {
 }
 
 int is_dir(const char* path) {
-    DIR *dir;
-    struct dirent *entry;
+    // DIR *dir;
+    // struct dirent *entry;
 
-    dir = opendir(path);
+    // dir = opendir(path);
 
-    if (dir == NULL) {
-        //unable to open the directory
+    // if (dir == NULL) {
+    //     //unable to open the directory
+    //     return -1;
+    // }
+
+    // while ((entry = readdir(dir)) != NULL) {
+    //     if (my_strcmp(entry->d_name, ".") == 0 || my_strcmp(entry->d_name, "..") == 0) {
+    //         continue;
+    //     }
+    //     closedir(dir);
+    //     return 1; //at least one entry found, so it's a directory
+    // }
+
+    // closedir(dir);
+
+    // return 0; //no entries found, so it's not a directory
+
+    struct stat path_stat;
+
+    if (stat(path, &path_stat) != 0) {
+        //unable to retrieve status
         return -1;
     }
 
-    while ((entry = readdir(dir)) != NULL) {
-        if (my_strcmp(entry->d_name, ".") == 0 || my_strcmp(entry->d_name, "..") == 0) {
-            continue;
-        }
-        closedir(dir);
-        return 1; //at least one entry found, so it's a directory
+    if (S_ISDIR(path_stat.st_mode)) {
+        //path points to a directory
+        return 1;
     }
-
-    closedir(dir);
-
-    return 0; //no entries found, so it's not a directory
+    else {
+        //path points to a file
+        return 0;
+    }
 }
 
-void process_input(char** argv, int index, int argc, char*** files, int* num_files) {
+int process_input(char** argv, int index, int argc, char*** files, int* num_files) {
     int num_flags = index - 1;
     int num_dirs = 0;
     char** directories = malloc(0);
@@ -207,7 +218,6 @@ void process_input(char** argv, int index, int argc, char*** files, int* num_fil
             directories = realloc(directories, (num_dirs + 1) * sizeof(char*));
             directories[num_dirs] = my_strdup(path);
             num_dirs++;
-
         }
         else {
             print_error(path);
@@ -216,49 +226,111 @@ void process_input(char** argv, int index, int argc, char*** files, int* num_fil
         index++;
     }
 
-    handle_dirs(argv, num_flags, num_dirs, &directories, files, num_files);
+    if (num_dirs > 0) {
+        handle_dirs(argv, num_flags, num_dirs, &directories, files, num_files);
+    }
 
     free_mem(directories, num_dirs);
 
+    return num_dirs;
 }
 
 void handle_dirs(char** argv, int num_flags, int num_dirs, char*** directories, char*** files, int* num_files) {
-    int files_per_dir[num_dirs];
-    char* flag = NULL;
+    // int files_per_dir[num_dirs];
+    char* flag = get_flags(argv, num_flags);
 
-    for (int i = 0; i < num_dirs; i++) {
-        //store files in the directory
-        if (num_flags > 0) {
-            flag = check_flags(argv, num_flags, files, num_files, (*directories)[i]);
-        }
-        else {
-            flag = dir_content(files, num_files, NULL, (*directories)[i]);
-        }
+    // for (int i = 0; i < num_dirs; i++) {
+    //     //store files in the directory
+    //     if (num_flags > 0) {
+    //         flag = check_flags(argv, num_flags, files, num_files, (*directories)[i]);
+    //     }
+    //     else {
+    //         flag = dir_content(files, num_files, NULL, (*directories)[i]);
+    //     }
 
-        if (i == 0) {
-            files_per_dir[i] = *num_files;
-        }
-        else {
-            files_per_dir[i] = *num_files - files_per_dir[i - 1];
+    //     if (i == 0) {
+    //         files_per_dir[i] = *num_files;
+    //     }
+    //     else {
+    //         files_per_dir[i] = *num_files - files_per_dir[i - 1];
+    //     }
+    // }
+
+    if (num_dirs > 1) {
+        if (flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
+            quicksort((void**) *directories, 0, num_dirs - 1, compare_mod_times);
+        } else {
+            quicksort((void**) *directories, 0, num_dirs - 1, compare_alphabet);
         }
     }
 
-    quicksort((void**) *directories, 0, num_dirs - 1, compare_alphabet);
+    // int start_index = 0;
+    // for (int i = 0; i < num_dirs; i++) {
+    //     print_dirs(*directories, i);
+    //     int end_index = start_index + files_per_dir[i] - 1;
+
+    //     if (flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
+    //         quicksort((void**) *files, start_index, end_index, compare_mod_times);
+    //     } 
+    //     else {
+    //         quicksort((void**) *files, start_index, end_index, compare_alphabet);
+    //     }
+
+    //     start_index += files_per_dir[i];
+    // }
 
     int start_index = 0;
+
     for (int i = 0; i < num_dirs; i++) {
-        print_dirs(*directories, i);
-        int end_index = start_index + files_per_dir[i] - 1;
+        //adding files from directories
+        if (num_flags > 0) {
+            check_flags(argv, num_flags, files, num_files, (*directories)[i]);
+        }
+        else {
+            dir_content(files, num_files, NULL, (*directories)[i]);
+        }
+
+        int num_files_in_dir = *num_files - start_index;
+        int end_index = start_index + num_files_in_dir - 1; //determine the end index of files within this directory
+
+        // for (int j = 0; j < *num_files; j++) {
+        //     printf("filename: %s\n", (*files)[j]);
+        // }
 
         if (flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
             quicksort((void**) *files, start_index, end_index, compare_mod_times);
-        } 
-        else {
+            // printf("sorting filnames by time\n");
+        } else {
             quicksort((void**) *files, start_index, end_index, compare_alphabet);
         }
+        
+        // printf("start_index:%d, end_index:%d, num_files_in_dir:%d\n", start_index, end_index, num_files_in_dir);
 
-        start_index += files_per_dir[i];
+        print_dirs(*directories, i);
+        print_files(*files + start_index, num_files_in_dir);
+
+        //update start index for the next directory
+        start_index += num_files_in_dir;
     }
+}
+
+char* get_flags(char** argv, int num_flags) {
+    if (num_flags == 1) {
+        return argv[1];
+    }
+
+    if (num_flags == 2) {
+        if ((my_strcmp(argv[1], "-a") == 0) && my_strcmp(argv[2], "-t") == 0) {
+            char* flag = "-at";
+            return flag;
+        }
+        else if (my_strcmp(argv[1], "-t") == 0 && my_strcmp(argv[2], "-a") == 0) {
+            char* flag = "-ta";
+            return flag;
+        }
+    }
+
+    return NULL;
 }
 
 void print_files(char** files, int num_files) {
@@ -270,6 +342,10 @@ void print_files(char** files, int num_files) {
 }
 
 void print_dirs(char** directories, int index) {
+    if (index != 0) {
+        my_putchar('\n');
+    }
+
     write(1, directories[index], my_strlen(directories[index]));
     my_putchar(':');
     my_putchar(' ');
