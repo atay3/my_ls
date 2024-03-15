@@ -79,16 +79,6 @@ char* dir_content(char*** files, int* num_files, char* flag, char* dir_path) {
 
     closedir(dir);
 
-    // if (flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
-    //     printf("flag is %s, calling quicksort - time\n", flag);
-        
-    //     quicksort((void**) *files, 0, *num_files - 1, compare_mod_times);
-
-    // }
-    // else {
-    //     printf("flag is %s, calling quicksort\n", flag);
-    //     quicksort((void**) *files, 0, *num_files - 1, compare_alphabet);
-    // }
     return flag;
 }
 
@@ -161,28 +151,6 @@ int compare_mod_times(const void* file_1, const void* file_2) {
 }
 
 int is_dir(const char* path) {
-    // DIR *dir;
-    // struct dirent *entry;
-
-    // dir = opendir(path);
-
-    // if (dir == NULL) {
-    //     //unable to open the directory
-    //     return -1;
-    // }
-
-    // while ((entry = readdir(dir)) != NULL) {
-    //     if (my_strcmp(entry->d_name, ".") == 0 || my_strcmp(entry->d_name, "..") == 0) {
-    //         continue;
-    //     }
-    //     closedir(dir);
-    //     return 1; //at least one entry found, so it's a directory
-    // }
-
-    // closedir(dir);
-
-    // return 0; //no entries found, so it's not a directory
-
     struct stat path_stat;
 
     if (stat(path, &path_stat) != 0) {
@@ -236,48 +204,16 @@ int process_input(char** argv, int index, int argc, char*** files, int* num_file
 }
 
 void handle_dirs(char** argv, int num_flags, int num_dirs, char*** directories, char*** files, int* num_files) {
-    // int files_per_dir[num_dirs];
     char* flag = get_flags(argv, num_flags);
-
-    // for (int i = 0; i < num_dirs; i++) {
-    //     //store files in the directory
-    //     if (num_flags > 0) {
-    //         flag = check_flags(argv, num_flags, files, num_files, (*directories)[i]);
-    //     }
-    //     else {
-    //         flag = dir_content(files, num_files, NULL, (*directories)[i]);
-    //     }
-
-    //     if (i == 0) {
-    //         files_per_dir[i] = *num_files;
-    //     }
-    //     else {
-    //         files_per_dir[i] = *num_files - files_per_dir[i - 1];
-    //     }
-    // }
 
     if (num_dirs > 1) {
         if (flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
             quicksort((void**) *directories, 0, num_dirs - 1, compare_mod_times);
-        } else {
+        }
+        else {
             quicksort((void**) *directories, 0, num_dirs - 1, compare_alphabet);
         }
     }
-
-    // int start_index = 0;
-    // for (int i = 0; i < num_dirs; i++) {
-    //     print_dirs(*directories, i);
-    //     int end_index = start_index + files_per_dir[i] - 1;
-
-    //     if (flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
-    //         quicksort((void**) *files, start_index, end_index, compare_mod_times);
-    //     } 
-    //     else {
-    //         quicksort((void**) *files, start_index, end_index, compare_alphabet);
-    //     }
-
-    //     start_index += files_per_dir[i];
-    // }
 
     int start_index = 0;
 
@@ -293,18 +229,12 @@ void handle_dirs(char** argv, int num_flags, int num_dirs, char*** directories, 
         int num_files_in_dir = *num_files - start_index;
         int end_index = start_index + num_files_in_dir - 1; //determine the end index of files within this directory
 
-        // for (int j = 0; j < *num_files; j++) {
-        //     printf("filename: %s\n", (*files)[j]);
-        // }
-
         if (flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
             quicksort((void**) *files, start_index, end_index, compare_mod_times);
-            // printf("sorting filnames by time\n");
-        } else {
+        } 
+        else {
             quicksort((void**) *files, start_index, end_index, compare_alphabet);
         }
-        
-        // printf("start_index:%d, end_index:%d, num_files_in_dir:%d\n", start_index, end_index, num_files_in_dir);
 
         print_dirs(*directories, i);
         print_files(*files + start_index, num_files_in_dir);
