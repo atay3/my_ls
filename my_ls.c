@@ -126,8 +126,10 @@ int compare_mod_times(const void* file_1, const void* file_2) {
     const char* f2 = (const char*) file_2;
 
     struct stat stat_f1, stat_f2;
-    lstat(f1, &stat_f1);
-    lstat(f2, &stat_f2);
+
+    if (stat(f1, &stat_f1) != 0) return -1;
+
+    if (stat(f2, &stat_f2) != 0) return -1;
 
     if (stat_f1.st_mtim.tv_sec < stat_f2.st_mtim.tv_sec) {
         return 1; //file 2 is more recent
@@ -177,12 +179,11 @@ int process_input(char** argv, int index, int argc, char*** files, int* num_file
         char* path = argv[index];
 
         if (is_dir(path) == 0) {
-            printf("%s is a file\n", path);
             *files = realloc(*files, (*num_files + 1) * sizeof(char*));
             (*files)[*num_files] = my_strdup(path);
             (*num_files)++;
         }
-        else if (is_dir(path) == 1) {
+        if (is_dir(path) == 1) {
             directories = realloc(directories, (num_dirs + 1) * sizeof(char*));
             directories[num_dirs] = my_strdup(path);
             num_dirs++;
@@ -231,12 +232,12 @@ void handle_dirs(char** argv, int num_flags, int num_dirs, char*** directories, 
 
         if (flag != NULL && (my_strcmp(flag, "-t") == 0 || my_strcmp(flag, "-at") == 0 || my_strcmp(flag, "-ta") == 0)) {
             quicksort((void**) *files, start_index, end_index, compare_mod_times);
-        } 
+        }
         else {
             quicksort((void**) *files, start_index, end_index, compare_alphabet);
         }
-
-        print_dirs(*directories, i);
+        
+        if (num_dirs > 1) print_dirs(*directories, i);
         print_files(*files + start_index, num_files_in_dir);
 
         //update start index for the next directory
@@ -278,7 +279,6 @@ void print_dirs(char** directories, int index) {
 
     write(1, directories[index], my_strlen(directories[index]));
     my_putchar(':');
-    my_putchar(' ');
     my_putchar('\n');
 }
 

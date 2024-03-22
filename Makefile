@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-Wall -Wextra -Werror -fsanitize=address -g3
+CFLAGS=-Wall -Wextra -Werror
 DEPS = my_ls.h
 TARGET = my_ls
 OBJ = my_ls.o
